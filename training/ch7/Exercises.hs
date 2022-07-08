@@ -1,4 +1,4 @@
-import Prelude hiding (all, any, takeWhile, dropWhile, map, filter, curry, uncurry)
+import Prelude hiding (all, any, takeWhile, dropWhile, map, filter, curry, uncurry, iterate)
 import Data.Char
 
 --
@@ -92,8 +92,54 @@ chop8 = unfold null (take 8) (drop 8)
 
 map2 :: (a -> b) -> [a] -> [b]
 map2 f = unfold null (f . head) tail
+--
 
 -- Predicate is not important (?)
-{-iterate :: (a -> a) -> a -> [a]
-iterate f = unfold (null) id f-}
+iterate :: (a -> a) -> a -> [a]
+iterate f = unfold (\x -> False) id f
+--
+
+--
+bin2int :: [Bit] -> Int
+bin2int = foldl (\n x -> n * 2 + x) 0
+
+int2bin :: Int -> [Bit]
+int2bin = reverse . unfold (== 0) (`mod` 2) (`div` 2)
+
+make8 :: [Bit] -> [Bit]
+make8 bits = reverse (take 8 (reverse bits ++ repeat 0))
+
+make8p :: [Bit] -> [Bit]
+make8p bits = make8 bits ++ [(sum bits) `mod` 2]
+
+encode :: String -> [Bit]
+encode = concat . map (make8 . int2bin . ord)
+
+decode :: [Bit] -> String
+decode = map (chr . bin2int) . chop8
+
+channel :: [Bit] -> [Bit]
+channel = id
+
+transmit :: String -> String
+transmit = decode . channel . encode
+
+encodep :: String -> [Bit]
+encodep = concat . map (make8p . int2bin . ord)
+
+verify :: [Bit] -> [Bit]
+verify bits | sum bits == last bits = bits
+            | otherwise = error ("Abort! Faulty transmission in sequence " ++ (show bits) ++ "!")
+
+chop8p :: [Bit] -> [[Bit]]
+chop8p = unfold null (take (8 + 1)) (drop (8 + 1))
+
+decodep  :: [Bit] -> String
+decodep = map (chr . bin2int . init . verify) . chop8p
+
+channelFuzz :: [Bit] -> [Bit]
+channelFuzz = tail
+
+transmitp :: String -> String
+transmitp = decodep . channelFuzz . encodep
 --
