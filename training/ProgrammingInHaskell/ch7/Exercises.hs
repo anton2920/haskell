@@ -101,13 +101,13 @@ iterate f = unfold (\x -> False) id f
 
 --
 bin2int :: [Bit] -> Int
-bin2int = foldl (\n x -> n * 2 + x) 0
+bin2int = foldr (\n x -> x * 2 + n) 0
 
 int2bin :: Int -> [Bit]
-int2bin = reverse . unfold (== 0) (`mod` 2) (`div` 2)
+int2bin = unfold (== 0) (`mod` 2) (`div` 2)
 
 make8 :: [Bit] -> [Bit]
-make8 bits = reverse (take 8 (reverse bits ++ repeat 0))
+make8 bits = take 8 (bits ++ repeat 0)
 
 make8p :: [Bit] -> [Bit]
 make8p bits = make8 bits ++ [(sum bits) `mod` 2]
@@ -128,7 +128,7 @@ encodep :: String -> [Bit]
 encodep = concat . map (make8p . int2bin . ord)
 
 verify :: [Bit] -> [Bit]
-verify bits | sum bits == last bits = bits
+verify bits | sum bits `mod` 2 == 0 = bits
             | otherwise = error ("Abort! Faulty transmission in sequence " ++ (show bits) ++ "!")
 
 chop8p :: [Bit] -> [[Bit]]
@@ -138,7 +138,7 @@ decodep  :: [Bit] -> String
 decodep = map (chr . bin2int . init . verify) . chop8p
 
 channelFuzz :: [Bit] -> [Bit]
-channelFuzz = tail
+channelFuzz xs = [1] ++ tail xs
 
 transmitp :: String -> String
 transmitp = decodep . channelFuzz . encodep
