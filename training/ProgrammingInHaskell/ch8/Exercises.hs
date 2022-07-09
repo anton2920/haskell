@@ -1,4 +1,4 @@
-import Prelude hiding (return)
+import Prelude hiding (return, (>>=), (+++))
 
 {-
     - Parser of type 'a'
@@ -20,3 +20,32 @@ item = \input -> case input of
 
 parse :: Parser a -> String -> [(a, String)]
 parse parser input = parser input
+
+(>>=) :: Parser a -> (a -> Parser b) -> Parser b
+p >>= f = \input -> case parse p input of
+                        [] -> []
+                        [(v, out)] -> parse (f v) out
+
+
+{-getFirstThird :: Parser (Char, Char)
+getFirstThird = item >>= \x ->
+                item >>= \_ ->
+                item >>= \y ->
+                return (x, y)-}
+
+getFirstThird :: Parser (Char, Char)
+getFirstThird = do x <- item
+                   item
+                   y <- item
+                   return (x, y)
+
+(+++) :: Parser a -> Parser a -> Parser a
+p +++ q = \input -> case parse p input of
+                        [] -> parse q input
+                        [(v, out)] -> [(v, out)]
+
+{-sat :: (Char -> Bool) -> Parser Char
+sat p = do x <- item
+            if p x then return x else failure-}
+
+
