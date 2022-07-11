@@ -127,18 +127,20 @@ Grammar:
 
 expr :: Parser Float
 expr = term >>= \t ->
-       (many1 (symbol "+" >>= \_ -> term) >>= \ts -> return (foldl (+) t ts)) +++
-       (many1 (symbol "-" >>= \_ -> term) >>= \ts -> return (foldl (-) t ts)) +++
+       (many1 (token (sat (\x -> x == '+' || x == '-')) >>= \op ->
+        term >>= \res -> if op == '+' then return res else return (-res)) >>= \ts ->
+        return (foldl (+) t ts)) +++
        return t
 
 term :: Parser Float
 term = neg >>= \nf ->
-       (many1 (symbol "*" >>= \_ -> neg) >>= \nfs -> return (foldl (*) nf nfs)) +++
-       (many1 (symbol "/" >>= \_ -> neg) >>= \nfs -> return (foldl (/) nf nfs)) +++
+       (many1 (token (sat (\x -> x == '*' || x == '/')) >>= \op ->
+        neg >>= \res -> if op == '*' then return res else return (1/res)) >>= \nfs ->
+        return (foldl (*) nf nfs)) +++
        return nf
 
 neg :: Parser Float
-neg = (char '-' >>= \_ -> factor >>= \t -> return (-t)) +++ factor
+neg = (symbol "-" >>= \_ -> term >>= \t -> return (-t)) +++ factor
 
 factor :: Parser Float
 factor = (symbol "(" >>= \_ -> expr >>= \e -> symbol ")" >>= \_ -> return e) +++ float
