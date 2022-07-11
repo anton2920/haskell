@@ -104,25 +104,56 @@ listOfNatural = symbol "[" >>= \_ ->
 
 ---
 
+fp :: Parser Float
+fp = many1 digit >>= \xs ->
+     (char '.' >>= \_ -> many1 digit >>= \ys -> return (read (xs ++ "." ++ ys))) +++
+     return (read xs)
+
+float :: Parser Float
+float = token fp
+
+{-float :: Parser Float
+float = (symbol "-" >>= \_ -> floatingPoint >>= \n -> return (-n) ) +++ floatingPoint-}
+
 {-
 Grammar:
-    expr   ::= term   (+ expr | e)
-    term   ::= factor (* term | e)
-    factor ::= (expr) | nat
+    expr   ::= term {("+" | "-") term}
+    term   ::= neg  {("*" | "/")  neg}
+    neg    ::= "-" term | factor
+    factor ::= "(" expr ")" | float
+    float  ::= nat [. nat]
     nat    ::= 0 | 1 | 2 | ...
 -}
 
-expr :: Parser Int
-expr = term >>= \t -> (symbol "+" >>= \_ -> expr >>= \e -> return (t + e)) +++ return t
+expr :: Parser Float
+expr = term >>= \t ->
+       (many1 (symbol "+" >>= \_ -> term) >>= \ts -> return (foldl (+) t ts)) +++
+       (many1 (symbol "-" >>= \_ -> term) >>= \ts -> return (foldl (-) t ts)) +++
+       return t
 
-term :: Parser Int
-term = factor >>= \f -> (symbol "*" >>= \_ -> term >>= \t -> return (f * t)) +++ return f
+term :: Parser Float
+term = neg >>= \nf ->
+       (many1 (symbol "*" >>= \_ -> neg) >>= \nfs -> return (foldl (*) nf nfs)) +++
+       (many1 (symbol "/" >>= \_ -> neg) >>= \nfs -> return (foldl (/) nf nfs)) +++
+       return nf
 
-factor :: Parser Int
-factor = (symbol "(" >>= \_ -> expr >>= \e -> symbol ")" >>= \_ -> return e) +++ natural
+neg :: Parser Float
+neg = (char '-' >>= \_ -> factor >>= \t -> return (-t)) +++ factor
 
-eval :: String -> Int
+factor :: Parser Float
+factor = (symbol "(" >>= \_ -> expr >>= \e -> symbol ")" >>= \_ -> return e) +++ float
+
+eval :: String -> Float
 eval xs = case parse expr xs of
             [(n, [])] -> n
             [(_, out)] -> error ("unused input " ++ out)
             [] -> error "invalid input"
+---
+
+--- Excersises
+int :: Parser Int
+int = (symbol "-" >>= \_ -> natural >>= \n -> return (-n)) +++ natural
+
+comment :: Parser ()
+comment = symbol "--" >>= \_ -> many (sat (/= '\n')) >>= \_ -> char '\n' >>= \_ -> return ()
+---
