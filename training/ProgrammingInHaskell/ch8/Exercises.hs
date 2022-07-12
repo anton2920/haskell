@@ -123,20 +123,20 @@ Grammar:
     term   ::= neg  {("*" | "/")  neg}
     neg    ::= "-" term | factor
     factor ::= "(" expr ")" | float
-    float  ::= nat [. nat]
+    float  ::= nat ["." nat]
     nat    ::= 0 | 1 | 2 | ...
 -}
 
 expr :: Parser Float
 expr = term >>= \t ->
-       (many1 (token (sat (\x -> x == '+' || x == '-')) >>= \op ->
+       (many1 (token (sat (\x -> (x == '+') || (x == '-'))) >>= \op ->
         term >>= \res -> if op == '+' then return res else return (-res)) >>= \ts ->
         return (foldl (+) t ts)) +++
        return t
 
 term :: Parser Float
 term = neg >>= \nf ->
-       (many1 (token (sat (\x -> x == '*' || x == '/')) >>= \op ->
+       (many1 (token (sat (\x -> (x == '*') || (x == '/'))) >>= \op ->
         neg >>= \res -> if op == '*' then return res else return (1/res)) >>= \nfs ->
         return (foldl (*) nf nfs)) +++
        return nf
