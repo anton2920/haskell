@@ -96,8 +96,8 @@ delete xs = calc (init xs)
 eval :: String -> IO ()
 eval xs = case parse expr xs of
             [(n, "")] -> calc (show n)
-            _ -> do
-                    beep
+            [(_, inv)] -> calc ("error near: " ++ inv)
+            _ -> do beep
                     calc xs
 
 clear :: IO ()
@@ -177,4 +177,16 @@ life b = do
 wait :: Int -> IO ()
 wait n = seqn [return () | _ <- [1..n]]
 
-
+--- Exercises
+---
+readLine :: IO String
+readLine =  do
+                x <- getCh
+                putStr (if x == '\DEL' then "\ESC[1D \ESC[1D" else [x])
+                if x == '\n' then
+                    return []
+                else
+                    do
+                        xs <- readLine
+                        return (if null xs || head xs /= '\DEL' then (x:xs) else tail xs)
+---
