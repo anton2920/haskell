@@ -1,3 +1,5 @@
+module Main2 where
+
 import Prelude hiding (return, (>>=), (+++))
 
 import Data.Char
