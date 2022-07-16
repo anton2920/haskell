@@ -1,2 +1,2 @@
 # haskell
-Programs on Haskell
+Programs in Haskell
