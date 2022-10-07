@@ -1,4 +1,4 @@
-import Main2 hiding (eval, return)
+import Main2 hiding (eval, return, (>>=))
 import System.IO
 
 getCh :: IO Char
@@ -142,7 +142,7 @@ neighbs (x, y) = map wrap [ (x - 1, y - 1), (x, y - 1),
 
 wrap :: Pos -> Pos
 wrap (x, y) = ( ((x - 1) `mod` width) + 1,
-                ((y - 1) `mod` height) + 1)
+                ((y - 1) `mod` height) + 1 )
 
 liveneighbs :: Board -> Pos -> Int
 liveneighbs b = length . filter (isAlive b) . neighbs
@@ -167,12 +167,24 @@ births b = [p | p <- rmdups (concat (map neighbs b)),
 nextgen :: Board -> Board
 nextgen b = survivors b ++ births b
 
+hidecells :: Board -> Board -> IO ()
+hidecells b nb = seqn [writeat p " " | p <- b, not (elem p nb)]
+
+reshowcells :: Board -> Board -> IO ()
+reshowcells b nb = seqn [writeat p "O" | p <- nb, not (elem p b)]
+
+newlife :: Board -> Board -> IO ()
+newlife b nb = do
+                    wait 100000
+                    hidecells b nb
+                    reshowcells b nb
+                    newlife nb (nextgen nb)
+
 life :: Board -> IO ()
 life b = do
             cls
             showcells b
-            wait 100000
-            life (nextgen b)
+            newlife b (nextgen b)
 
 wait :: Int -> IO ()
 wait n = seqn [return () | _ <- [1..n]]
@@ -190,3 +202,57 @@ readLine =  do
                         xs <- readLine
                         return (if null xs || head xs /= '\DEL' then (x:xs) else tail xs)
 ---
+
+--- WASD - movement, Space - insert/remove dot, Enter - dump result.
+editor :: Board -> IO ()
+editor b = editor' b (1, 1)
+            where editor' b (x, y) =
+                    do
+                        cls
+                        showcells b
+                        goto (wrap (x, y))
+                        inp <- getCh
+                        case inp of
+                            'w'  -> editor' b (wrap (x, y - 1))
+                            'a'  -> editor' b (wrap (x - 1, y))
+                            's'  -> editor' b (wrap (x, y + 1))
+                            'd'  -> editor' b (wrap (x + 1, y))
+                            ' '  -> editor' (if (elem (x, y) b) then filter (/= (x, y)) b else (x, y):b) (x, y)
+                            '\n' -> cls >>= \_ -> goto (0, 0) >>= \_ -> putStrLn ("Board is: " ++ show b)
+                            otherwise -> editor' b (x, y)
+
+--- Nim
+type NimBoard = [Int]
+
+strJoin :: [String] -> String -> String
+strJoin [] _ = ""
+strJoin (x:xs) j = x ++ j ++ strJoin xs j
+
+split2 :: String -> Char -> (Int, Int)
+split2 xs s = (read (takeWhile (/= s) xs), read (tail (dropWhile (/= s) xs)))
+
+dispayNim :: NimBoard -> IO ()
+dispayNim b = seqn [putStrLn ((show (id + 1)) ++ ": " ++ strJoin (replicate (b!!id) "*") " ") | id <- [0..(length b) - 1]]
+
+nimTurn :: NimBoard -> (Int, Int) -> (NimBoard, Bool)
+nimTurn b (nrow, nitems) = if (nrow < 1) || (nrow > 5) || (change < 0) then (b, False)
+                           else (take (nrow - 1) b ++ [change] ++ drop nrow b, True)
+                                where change = b!!(nrow-1) - nitems
+
+nim :: IO ()
+nim = nim' [5, 4, 3, 2, 1] 0
+        where nim' b pnum =
+                do
+                    cls
+                    goto (0, 0)
+                    dispayNim b
+                    putStr ("Player #" ++ (show (pnum + 1)) ++ "'s turn (nrow, nitems): ")
+                    turn <- readLine
+                    let (nb, stat) = nimTurn b (split2 turn ' ')
+                    if (all (== 0) nb) then
+                        putStrLn ("Player #" ++ (show (pnum + 1)) ++ " wins!")
+                    else
+                        if stat then
+                            nim' nb ((pnum + 1) `mod` 2)
+                        else
+                            nim' nb pnum
