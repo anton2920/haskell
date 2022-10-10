@@ -1,8 +1,8 @@
 module Main2 where
 
-import Prelude hiding (return, (>>=), (+++))
+import           Prelude   hiding (return, (+++), (>>=))
 
-import Data.Char
+import           Data.Char
 
 {-
     - Parser of type 'a'
@@ -19,7 +19,7 @@ failure = \input -> []
 
 item :: Parser Char
 item = \input -> case input of
-                    [] -> []
+                    []     -> []
                     (x:xs) -> [(x, xs)]
 
 parse :: Parser a -> String -> [(a, String)]
@@ -27,7 +27,7 @@ parse parser input = parser input
 
 (>>=) :: Parser a -> (a -> Parser b) -> Parser b
 p >>= f = \input -> case parse p input of
-                        [] -> []
+                        []         -> []
                         [(v, out)] -> parse (f v) out
 
 
@@ -45,7 +45,7 @@ getFirstThird = do x <- item
 
 (+++) :: Parser a -> Parser a -> Parser a
 p +++ q = \input -> case parse p input of
-                        [] -> parse q input
+                        []         -> parse q input
                         [(v, out)] -> [(v, out)]
 
 sat :: (Char -> Bool) -> Parser Char
@@ -65,7 +65,7 @@ char :: Char -> Parser Char
 char x = sat (== x)
 
 string :: String -> Parser String
-string [] = return []
+string []     = return []
 string (x:xs) = char x >>= \_ -> string xs >>= \_ -> return (x:xs)
 
 many :: Parser a -> Parser [a]
@@ -149,9 +149,9 @@ factor = (symbol "(" >>= \_ -> expr >>= \e -> symbol ")" >>= \_ -> return e) +++
 
 eval :: String -> Float
 eval xs = case parse expr xs of
-            [(n, [])] -> n
+            [(n, [])]  -> n
             [(_, out)] -> error ("unused input " ++ out)
-            [] -> error "invalid input"
+            []         -> error "invalid input"
 ---
 
 --- Excersises

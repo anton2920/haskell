@@ -1,4 +1,5 @@
-import Prelude hiding ((^), and, concat, replicate, (!!), elem, sum, take, drop, last)
+import           Prelude hiding (and, concat, drop, elem, last, replicate, sum,
+                          take, (!!), (^))
 
 --
 (^) :: Int -> Int -> Int
@@ -8,11 +9,11 @@ import Prelude hiding ((^), and, concat, replicate, (!!), elem, sum, take, drop,
 
 --
 and :: [Bool] -> Bool
-and [] = True
+and []     = True
 and (x:xs) = x && and xs
 
 concat :: [[a]] -> [a]
-concat [] = []
+concat []     = []
 concat (x:xs) = x ++ concat xs
 
 replicate :: Int -> a -> [a]
@@ -20,7 +21,7 @@ replicate 0 _ = []
 replicate n p = [p] ++ replicate (n - 1) p
 
 (!!) :: [a] -> Int -> a
-(!!) xs 0 = head xs
+(!!) xs 0     = head xs
 (!!) (x:xs) n = (!!) xs (n - 1)
 
 elem :: Eq a => a -> [a] -> Bool
@@ -50,18 +51,18 @@ msort xs = merge (msort x) (msort y)
 
 --
 sum :: Num a => [a] -> a
-sum [] = 0
+sum []     = 0
 sum (x:xs) = x + sum xs
 
 take :: Int -> [a] -> [a]
-take 0 _ = []
+take 0 _      = []
 take n (x:xs) = x:take (n - 1) xs
 
 drop :: Int -> [a] -> [a]
-drop 0 xs = xs
+drop 0 xs     = xs
 drop n (x:xs) = drop (n - 1) xs
 
 last :: [a] -> a
-last [x] = x
+last [x]    = x
 last (x:xs) = last xs
 --

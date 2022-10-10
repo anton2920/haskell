@@ -1,5 +1,6 @@
-import Prelude hiding (all, any, takeWhile, dropWhile, map, filter, curry, uncurry, iterate)
-import Data.Char
+import           Data.Char
+import           Prelude   hiding (all, any, curry, dropWhile, filter, iterate,
+                            map, takeWhile, uncurry)
 
 --
 task11 :: (a -> b) -> (a -> Bool) -> [a] -> [b]

@@ -7,7 +7,7 @@ safetail xs = tail xs
 
 or :: Bool -> Bool -> Bool
 b `or` False = b
-_ `or` True = True
+_ `or` True  = True
 
 
 {-

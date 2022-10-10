@@ -23,7 +23,7 @@ apply Div x y = x `div` y
 data Expr = Val Int | App Op Expr Expr
 
 instance Show Expr where
-    show (Val n) = show n
+    show (Val n)       = show n
     show (App Add x y) = show x ++ " + " ++ show y
     show (App Sub x y) = show x ++ " - " ++ show y
     show (App Mul x y) = show x ++ " * " ++ show y
@@ -31,11 +31,11 @@ instance Show Expr where
 
 -- Returns list of values in the expression
 values :: Expr -> [Int]
-values (Val n) = [n]
+values (Val n)     = [n]
 values (App _ l r) = values l ++ values r
 
 eval :: Expr -> [Int]
-eval (Val n) = [n | n > 0]
+eval (Val n)     = [n | n > 0]
 eval (App o l r) = [apply o x y | x <- eval l, y <- eval r, valid o x y]
 
 subs :: [a] -> [[a]]
@@ -44,11 +44,11 @@ subs (x:xs) = yss ++ map (x:) yss
                 where yss = subs xs
 
 interleave :: a -> [a] -> [[a]]
-interleave x [] = [[x]]
+interleave x []     = [[x]]
 interleave x (y:ys) = (x:y:ys):map (y:) (interleave x ys)
 
 perms :: [a] -> [[a]]
-perms [] = [[]]
+perms []     = [[]]
 perms (x:xs) = concat (map (interleave x) (perms xs))
 
 choices :: [a] -> [[a]]
@@ -58,8 +58,8 @@ solution :: Expr -> [Int] -> Int -> Bool
 solution e ns n = (elem (values e) (choices ns)) && (eval e == [n])
 
 split :: [a] -> [([a], [a])]
-split [] = []
-split [_] = []
+split []     = []
+split [_]    = []
 split (x:xs) = ([x], xs):[(x:ls, rs) | (ls, rs) <- split xs]
 
 exprs :: [Int] -> [Expr]
