@@ -33,9 +33,7 @@ instance Alternative Parser where
 	empty = Parser (\_ -> [])
 	
 	(<|>) :: Parser a -> Parser a -> Parser a
-	(<|>) f g = Parser (\xs -> case runParser f xs of
-					[]         -> runParser g xs
-					[(a, xs')] -> [(a, xs')])
+	(<|>) (Parser f) (Parser g) = Parser (\xs -> f xs <|> g xs)
 
 charP :: Char -> Parser Char
 charP x = Parser (\(y:ys) -> (if x == y then [(y, ys)] else []))
