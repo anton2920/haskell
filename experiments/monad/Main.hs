@@ -8,26 +8,25 @@ newtype Parser a = Parser
 
 instance Functor Parser where
 	fmap :: (a -> b) -> Parser a -> Parser b
-	fmap f pa = Parser (\xs -> case runParser pa xs of
-					[]         -> []
-					[(a, xs')] -> [(f a, xs')])
+	fmap f (Parser pa) = Parser (\xs -> do
+				(a, xs') <- pa xs
+				[(f a, xs')])
 
 instance Applicative Parser where
 	pure :: a -> Parser a
 	pure x = Parser (\xs -> [(x, xs)])
 
 	(<*>) :: Parser (a -> b) -> Parser a -> Parser b
-	(<*>) f pa = Parser (\xs -> case runParser f xs of
-					[]         -> []
-					[(g, xs')] -> case runParser pa xs' of
-							[]          -> []
-							[(a, xs'')] -> [(g a, xs'')])
+	(<*>) (Parser pf) (Parser pa) = Parser (\xs -> do
+					(g, xs') <- pf xs
+					(a, xs'') <- pa xs'
+					[(g a, xs'')])
 
 instance Monad Parser where
 	(>>=) :: Parser a -> (a -> Parser b) -> Parser b
-	(>>=) pa f = Parser (\xs -> case runParser pa xs of
-					[]         -> []
-					[(a, xs')] -> runParser (f a) xs')
+	(>>=) (Parser pa) f = Parser (\xs -> do
+				(a, xs') <- pa xs
+				runParser (f a) xs')
 
 instance Alternative Parser where
 	empty :: Parser a
