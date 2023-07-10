@@ -48,7 +48,12 @@ predP p = Parser(\xs -> case span p xs of
 				(a, b)  -> [(a, b)])
 
 tokP :: String -> Parser String
-tokP xs = many (predP isSpace) >> mapM charP xs
+tokP xs = do
+		spaceP
+		r <- mapM charP xs
+		spaceP
+		return r
+	where spaceP = many (predP isSpace)
 
 {-
 Grammar:
@@ -56,7 +61,7 @@ Grammar:
 	term   = factor ( [*, /] factor )*
 	factor = exp    ( ^ factor      )*
 	exp    = ([+, -])* neg
-	neg    = num | \( expr \)
+	neg    = \( expr \) | num
 	num    = [0-9]+([.][0-9]*)?|[.][0-9]+
 -}
 
@@ -67,8 +72,7 @@ exprP = (do
 				op <- (tokP "+" <|> tokP "-")
 				x' <- termP
 				return (if op == "+" then x' else negate x'))
-		many (predP isSpace)
-		return (foldl (+) 0 (x:xs))) <|> termP
+		return (foldl (+) x xs)) <|> termP
 
 termP :: Parser Double
 termP = (do
@@ -77,7 +81,7 @@ termP = (do
 				op <- (tokP "*" <|> tokP "/")
 				x' <- factorP
 				return (if op == "*" then x' else recip x'))
-		return (foldl (*) 1 (x:xs))) <|> factorP
+		return (foldl (*) x xs)) <|> factorP
 
 factorP :: Parser Double
 factorP = (do
@@ -103,13 +107,11 @@ negP = (do
 
 numP :: Parser Double
 numP = (do
-		many (predP isSpace)
 		integ <- predP isDigit
 		charP '.' <|> return '.'
 		fract <- (predP isDigit <|> return "0")
 		return (read (integ ++ '.':fract))) <|>
 	(do
-		many (predP isSpace)
 		charP '.'
 		fract <- predP isDigit
 		return (read ('0':'.':fract)))
@@ -121,4 +123,4 @@ eval s = case runParser exprP s of
 		[]               -> error "invalid expression"
 
 main :: IO ()
-main = putStrLn $ show $ eval "2 + 2 * 2"
+main = putStrLn $ show $ eval "(123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) - (123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) + (13 - 2)/ -(-11) "
