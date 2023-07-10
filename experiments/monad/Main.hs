@@ -33,16 +33,92 @@ instance Alternative Parser where
 	empty = Parser (\_ -> [])
 	
 	(<|>) :: Parser a -> Parser a -> Parser a
-	(<|>) (Parser f) (Parser g) = Parser (\xs -> f xs <|> g xs)
+	(<|>) (Parser f) (Parser g) = Parser (\xs -> case f xs of
+							[] -> g xs
+							ys -> ys)
 
 charP :: Char -> Parser Char
-charP x = Parser (\(y:ys) -> (if x == y then [(y, ys)] else []))
+charP x = Parser (\ys' -> case ys' of
+				[]     -> []
+				(y:ys) -> (if x == y then [(y, ys)] else []))
 
-stringP :: String -> Parser String
-stringP xs = mapM charP xs
+predP :: (Char -> Bool) -> Parser String
+predP p = Parser(\xs -> case span p xs of
+				([], _) -> []
+				(a, b)  -> [(a, b)])
 
-spaceP :: Parser Char
-spaceP = charP ' ' <|> charP '\t'
+tokP :: String -> Parser String
+tokP xs = many (predP isSpace) >> mapM charP xs
+
+{-
+Grammar:
+	expr   = term   ( [+, -] term   )*
+	term   = factor ( [*, /] factor )*
+	factor = exp    ( ^ factor      )*
+	exp    = ([+, -])* neg
+	neg    = num | \( expr \)
+	num    = [0-9]+([.][0-9]*)?|[.][0-9]+
+-}
+
+exprP :: Parser Double
+exprP = (do
+		x  <- termP
+		xs <- some (do
+				op <- (tokP "+" <|> tokP "-")
+				x' <- termP
+				return (if op == "+" then x' else negate x'))
+		many (predP isSpace)
+		return (foldl (+) 0 (x:xs))) <|> termP
+
+termP :: Parser Double
+termP = (do
+		x <- factorP
+		xs <- some (do
+				op <- (tokP "*" <|> tokP "/")
+				x' <- factorP
+				return (if op == "*" then x' else recip x'))
+		return (foldl (*) 1 (x:xs))) <|> factorP
+
+factorP :: Parser Double
+factorP = (do
+		x <- expP
+		tokP "^"
+		y <- factorP
+		return (x ^ (round y))) <|> expP
+
+expP :: Parser Double
+expP = do
+		signs <- many (do
+				sign <- tokP "+" <|> tokP "-"
+				return (if sign == "+" then id else negate))
+		x <- negP
+		return (foldr ($) x signs)
+
+negP :: Parser Double
+negP = (do
+		tokP "("
+		x <- exprP
+		tokP ")"
+		return x) <|> numP
+
+numP :: Parser Double
+numP = (do
+		many (predP isSpace)
+		integ <- predP isDigit
+		charP '.' <|> return '.'
+		fract <- (predP isDigit <|> return "0")
+		return (read (integ ++ '.':fract))) <|>
+	(do
+		many (predP isSpace)
+		charP '.'
+		fract <- predP isDigit
+		return (read ('0':'.':fract)))
+
+eval :: String -> Double
+eval s = case runParser exprP s of
+		[(a, "")]        -> a
+		[(_, rs)]        -> error ("cannot parse at or near '" ++ rs ++ "'")
+		[]               -> error "invalid expression"
 
 main :: IO ()
-main = putStrLn $ show $ runParser (stringP "hello") "hello, world!"
+main = putStrLn $ show $ eval "2 + 2 * 2"
