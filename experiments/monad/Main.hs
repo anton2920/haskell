@@ -47,13 +47,28 @@ predP p = Parser(\xs -> case span p xs of
 				([], _) -> []
 				(a, b)  -> [(a, b)])
 
-tokP :: String -> Parser String
-tokP xs = do
+trimP :: Parser a -> Parser a
+trimP pa = do
 		spaceP
-		r <- mapM charP xs
+		r <- pa
 		spaceP
 		return r
 	where spaceP = many (predP isSpace)
+
+tokP :: String -> Parser String
+tokP xs = trimP (mapM charP xs)	
+
+doubleP :: Parser Double
+doubleP =
+	(do
+		integ <- predP isDigit
+		charP '.' <|> return '.'
+		fract <- (predP isDigit <|> return "0")
+		return (read (integ ++ '.':fract))) <|>
+	(do
+		charP '.'
+		fract <- predP isDigit
+		return (read ('0':'.':fract)))
 
 {-
 Grammar:
@@ -106,15 +121,7 @@ negP = (do
 		return x) <|> numP
 
 numP :: Parser Double
-numP = (do
-		integ <- predP isDigit
-		charP '.' <|> return '.'
-		fract <- (predP isDigit <|> return "0")
-		return (read (integ ++ '.':fract))) <|>
-	(do
-		charP '.'
-		fract <- predP isDigit
-		return (read ('0':'.':fract)))
+numP = trimP doubleP
 
 eval :: String -> Double
 eval s = case runParser exprP s of
@@ -123,4 +130,4 @@ eval s = case runParser exprP s of
 		[]               -> error "invalid expression"
 
 main :: IO ()
-main = putStrLn $ show $ eval "(123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) - (123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) + (13 - 2)/ -(-11) "
+main = putStrLn $ show $ eval "2 + 2 * 2"
