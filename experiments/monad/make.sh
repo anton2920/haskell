@@ -1,3 +1,3 @@
 #!/bin/sh
 
-ghc -Wno-tabs Main.hs && ./Main
+ghc -Wall -Wno-tabs Main.hs -optl-static && ./Main
